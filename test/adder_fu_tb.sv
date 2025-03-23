@@ -25,7 +25,6 @@ module adder_fu_tb;
     initial begin
         clk = 0;
         reset = 1;
-        on_off = 1;
         config_tb = 2'd0;
 
         inputs[0] = 16'd1;
@@ -37,15 +36,26 @@ module adder_fu_tb;
         inputs[6] = 16'd7;
         inputs[7] = 16'd8;
 
+        on_off = 1;
+
+
         #10;
         reset = 0;
-        #10;
+        #20;
         // Test 4x16b adders (config_tb = 2'd0)
-        $display("Config: 2'd0, Inputs: %p, Outputs: %p, Carry: %b", inputs, outputs, carry_out_final);
+        $display("Config: 2'd0, Inputs:");
+        for (int i = 0; i < 8; i++) begin
+            $display("inputs[%0d] = %h", i, inputs[i]);
+        end
+        $display("Outputs:");
+        for (int i = 0; i < 4; i++) begin
+            $display("outputs[%0d] = %h", i, outputs[i]);
+        end
+        $display("Carry: %b", carry_out_final);
 
         config_tb = 2'd1; // Test 2x32b adders
-        inputs[0] = 16'd10;
-        inputs[1] = 16'd20;
+        inputs[0] = 16'hFFFF;
+        inputs[1] = 16'h0001;
         inputs[2] = 16'd30;
         inputs[3] = 16'd40;
         inputs[4] = 16'd50;
@@ -53,23 +63,43 @@ module adder_fu_tb;
         inputs[6] = 16'd70;
         inputs[7] = 16'd80;
         #20;
-        $display("Config: 2'd1, Inputs: %p, Outputs: %p, Carry: %b", inputs, outputs, carry_out_final);
+        $display("Config: 2'd1, Inputs:");
+        for (int i = 0; i < 8; i++) begin
+            $display("inputs[%0d] = %h", i, inputs[i]);
+        end
+        $display("Outputs:");
+        for (int i = 0; i < 4; i++) begin
+            $display("outputs[%0d] = %h", i, outputs[i]);
+        end
+        $display("Carry: %b", carry_out_final);
 
         config_tb = 2'd3; // Test 1x64b adder
-        inputs[0] = 16'd100;
-        inputs[1] = 16'd200;
-        inputs[2] = 16'd300;
-        inputs[3] = 16'd400;
-        inputs[4] = 16'd500;
-        inputs[5] = 16'd600;
-        inputs[6] = 16'd700;
-        inputs[7] = 16'd800;
+        inputs[0] = 16'hFFFF;
+        inputs[1] = 16'hFFFF;
+        inputs[2] = 16'hFFFF;
+        inputs[3] = 16'hFFFF;
+        inputs[4] = 16'hFFFF;
+        inputs[5] = 16'hFFFF;
+        inputs[6] = 16'h0F00;
+        inputs[7] = 16'h0F00;
         #20;
-        $display("Config: 2'd3, Inputs: %p, Outputs: %p, Carry: %b", inputs, outputs, carry_out_final);
+        $display("Config: 2'd3, Inputs:");
+        for (int i = 0; i < 8; i++) begin
+            $display("inputs[%0d] = %h", i, inputs[i]);
+        end
+        $display("Outputs:");
+        for (int i = 0; i < 4; i++) begin
+            $display("outputs[%0d] = %h", i, outputs[i]);
+        end
+        $display("Carry: %b", carry_out_final);
 
         on_off = 0; // Test off mode
-        #10;
-        $display("Config: %d, off mode, Outputs: %p, Carry: %b", config_tb, outputs, carry_out_final);
+        #25;
+        $display("Config: %d, off mode, Outputs:", config_tb);
+        for (int i = 0; i < 4; i++) begin
+            $display("outputs[%0d] = %h", i, outputs[i]);
+        end
+        $display("Carry: %b", carry_out_final);
 
         $finish;
     end

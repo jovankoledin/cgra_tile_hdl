@@ -12,10 +12,9 @@ module adder_fu #(parameter WIDTH = 16) (
     output reg carry_out_final
 );
 
-    wire [WIDTH-1:0] sum1, sum2, sum3, sum4;
     wire carry1, carry2, carry3, carry4;
     wire ack1, ack2, ack3, ack4;
-    wire a1_on_off, a2_on_off, a3_on_off, a4_on_off;
+    reg a1_on_off, a2_on_off, a3_on_off, a4_on_off;
 
 
     always @(posedge clk) begin
@@ -58,6 +57,7 @@ module adder_fu #(parameter WIDTH = 16) (
     end
 
     half_adder #( .width(WIDTH) ) adder1 (
+        .clk(clk),
         .reset(reset),
         .a(inputs[0]),
         .b(inputs[1]),
@@ -68,6 +68,7 @@ module adder_fu #(parameter WIDTH = 16) (
     );
 
     full_adder #( .width(WIDTH) ) adder2 (
+        .clk(clk),
         .reset(reset),
         .a(inputs[2]),
         .b(inputs[3]),
@@ -80,6 +81,7 @@ module adder_fu #(parameter WIDTH = 16) (
     );
 
     full_adder #( .width(WIDTH) ) adder3 (
+        .clk(clk),    
         .reset(reset),
         .a(inputs[4]),
         .b(inputs[5]),
@@ -92,6 +94,7 @@ module adder_fu #(parameter WIDTH = 16) (
     );
 
     full_adder #( .width(WIDTH) ) adder4 (
+        .clk(clk),
         .reset(reset),
         .a(inputs[6]),
         .b(inputs[7]),
