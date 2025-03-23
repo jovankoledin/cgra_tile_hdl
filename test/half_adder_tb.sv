@@ -68,7 +68,7 @@ module half_adder_tb;
     a = 16'hAAAA;
     b = 16'h5555;
     #10;
-    if ({carry_out, c} !== 17'h0FFFF) $error("Test case 5 failed"); else $display("Test case 5 passed");
+    if ({carry_out, c} !== 17'h0FFFF || ack !== 1'b1) $error("Test case 5 failed"); else $display("Test case 5 passed");
 
     // Test case 6: Large values that generate a carry
     #10;

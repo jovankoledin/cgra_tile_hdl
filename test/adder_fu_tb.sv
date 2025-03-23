@@ -2,62 +2,78 @@
 
 module adder_fu_tb;
 
-    parameter width = 8; // Adjust width as needed
+    parameter WIDTH = 16;
 
-    reg  [width-1:0] a_tb;
-    reg  [width-1:0] b_tb;
-    wire [width-1:0] c_tb;
-    reg  [0:0] carry_in_tb;
-    wire [0:0] carry_out_tb;
-    reg  [0:0] carry_listen_tb;
-    reg  [0:0] on_off_tb;
-    
-    typedef enum {
-        add_16,
-        add_32,
-        add_64,
-    } config;
+    reg clk;
+    reg reset;
+    reg [WIDTH-1:0] inputs [7:0];
+    reg on_off;
+    reg [1:0] config_tb;
+    wire [WIDTH-1:0] outputs [3:0];
+    wire carry_out_final;
 
-     ADD_16 = 0;
-
-    input wire [WIDTH-1:0] inputs [7:0],
-    input wire on_off,
-    input wire [2:0] config,
-    output reg [WIDTH-1:0] outputs [3:0],
-    output reg car
-
-    adder_fu #( .width(width) ) uut (
-        .inputs(inputs_tb),
-        .config(),
-        .carry_out(carry_out_tb),
-        .on_off(on_off_tb)
+    adder_fu #( .WIDTH(WIDTH) ) uut (
+        .clk(clk),
+        .reset(reset),
+        .inputs(inputs),
+        .on_off(on_off),
+        .config_in(config_tb),
+        .outputs(outputs),
+        .carry_out_final(carry_out_final)
     );
 
     initial begin
-        // Initialize inputs
-        a_tb = 8'd5;
-        b_tb = 8'd10;
-        on_off_tb = 1'b1;
+        clk = 0;
+        reset = 1;
+        on_off = 1;
+        config_tb = 2'd0;
 
-        // Apply test vectors
+        inputs[0] = 16'd1;
+        inputs[1] = 16'd2;
+        inputs[2] = 16'd3;
+        inputs[3] = 16'd4;
+        inputs[4] = 16'd5;
+        inputs[5] = 16'd6;
+        inputs[6] = 16'd7;
+        inputs[7] = 16'd8;
+
         #10;
-        $display("a=%d, b=%d, on_off=%b, sum=%d, carry_out=%b",
-                 a_tb, b_tb, on_off_tb, c_tb, carry_out_tb);
-
-        a_tb = 8'd250;
-        b_tb = 8'd21;
-        on_off_tb = 1'b1;
-
+        reset = 0;
         #10;
-        $display("a=%d, b=%d, on_off=%b, sum=%d, carry_out=%b",
-                 a_tb, b_tb, on_off_tb, c_tb, carry_out_tb);
+        // Test 4x16b adders (config_tb = 2'd0)
+        $display("Config: 2'd0, Inputs: %p, Outputs: %p, Carry: %b", inputs, outputs, carry_out_final);
 
-        on_off_tb = 1'b0;
+        config_tb = 2'd1; // Test 2x32b adders
+        inputs[0] = 16'd10;
+        inputs[1] = 16'd20;
+        inputs[2] = 16'd30;
+        inputs[3] = 16'd40;
+        inputs[4] = 16'd50;
+        inputs[5] = 16'd60;
+        inputs[6] = 16'd70;
+        inputs[7] = 16'd80;
+        #20;
+        $display("Config: 2'd1, Inputs: %p, Outputs: %p, Carry: %b", inputs, outputs, carry_out_final);
+
+        config_tb = 2'd3; // Test 1x64b adder
+        inputs[0] = 16'd100;
+        inputs[1] = 16'd200;
+        inputs[2] = 16'd300;
+        inputs[3] = 16'd400;
+        inputs[4] = 16'd500;
+        inputs[5] = 16'd600;
+        inputs[6] = 16'd700;
+        inputs[7] = 16'd800;
+        #20;
+        $display("Config: 2'd3, Inputs: %p, Outputs: %p, Carry: %b", inputs, outputs, carry_out_final);
+
+        on_off = 0; // Test off mode
         #10;
-        $display("a=%d, b=%d, on_off=%b, sum=%d, carry_out=%b",
-                 a_tb, b_tb, on_off_tb, c_tb, carry_out_tb);
+        $display("Config: %d, off mode, Outputs: %p, Carry: %b", config_tb, outputs, carry_out_final);
 
         $finish;
     end
+
+    always #5 clk = ~clk; // Generate clock
 
 endmodule

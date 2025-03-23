@@ -66,7 +66,7 @@ module full_adder_tb;
     a = 16'h1234;
     b = 16'h5678;
     #10;
-    if ({carry_out, c} !== 17'h068AC) $error("Test case 3 failed"); else $display("Test case 3 passed");
+    if ({carry_out, c} !== 17'h068AC || ack !== 1'b1) $error("Test case 3 failed"); else $display("Test case 3 passed");
 
     // Test case 4: on_off = 1, carry_listen = 1, carry_in = 1
     #10;
