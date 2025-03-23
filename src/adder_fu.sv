@@ -1,11 +1,13 @@
 `timescale 1ns/1ps
+`include "../src/full_adder.sv"
+`include "../src/half_adder.sv"
 
 module adder_fu #(parameter WIDTH = 16) (
     input wire clk,
     input wire reset,
     input wire [WIDTH-1:0] inputs [7:0],
     input wire on_off,
-    input wire [1:0] config,
+    input wire [1:0] config_in,
     output reg [WIDTH-1:0] outputs [3:0],
     output reg carry_out_final
 );
@@ -22,11 +24,10 @@ module adder_fu #(parameter WIDTH = 16) (
             a2_on_off <= 1'b0;
             a3_on_off <= 1'b0;
             a4_on_off <= 1'b0;
-            outputs <= '{0};
             carry_out_final <= 1'b0;
-        end
+
         end else begin
-            case (config)
+            case (config_in)
                 2'd0: begin // 4x16b adders
                     a1_on_off <= on_off;
                     a2_on_off <= on_off;
@@ -53,6 +54,7 @@ module adder_fu #(parameter WIDTH = 16) (
                 end
             endcase
         end
+        carry_out_final <= carry4;
     end
 
     half_adder #( .width(WIDTH) ) adder1 (
@@ -61,7 +63,7 @@ module adder_fu #(parameter WIDTH = 16) (
         .b(inputs[1]),
         .c(outputs[0]),
         .carry_out(carry1),
-        .ack(ack1)
+        .ack(ack1),
         .on_off(a1_on_off)
     );
 
@@ -72,7 +74,7 @@ module adder_fu #(parameter WIDTH = 16) (
         .c(outputs[1]),
         .carry_in(carry1),
         .carry_out(carry2),
-        .carry_listen(config[0]),
+        .carry_listen(config_in[0]),
         .on_off(a2_on_off),
         .ack(ack2)
     );
@@ -84,7 +86,7 @@ module adder_fu #(parameter WIDTH = 16) (
         .c(outputs[2]),
         .carry_in(carry2),
         .carry_out(carry3),
-        .carry_listen(config[1]),
+        .carry_listen(config_in[1]),
         .on_off(a3_on_off),
         .ack(ack3)
     );
@@ -96,12 +98,11 @@ module adder_fu #(parameter WIDTH = 16) (
         .c(outputs[3]),
         .carry_in(carry3),
         .carry_out(carry4),
-        .carry_listen(config[0]),
+        .carry_listen(config_in[0]),
         .on_off(a4_on_off),
         .ack(ack4)
     );
 
-    assign carry_out_final = carry4;
-
+    
 
 endmodule
