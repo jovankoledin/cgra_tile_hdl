@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-`include "../src/full_adder.sv"
-`include "../src/half_adder.sv"
+`include "../../src/adder_fu/full_adder.sv"
+`include "../../src/adder_su/half_adder.sv"
 
 module adder_fu #(parameter WIDTH = 16) (
     input wire clk,
@@ -9,13 +9,12 @@ module adder_fu #(parameter WIDTH = 16) (
     input wire on_off,
     input wire [1:0] config_in,
     output reg [WIDTH-1:0] outputs [3:0],
-    output reg carry_out_final
+    output reg ack
 );
 
     wire carry1, carry2, carry3, carry4;
     wire ack1, ack2, ack3, ack4;
     reg a1_on_off, a2_on_off, a3_on_off, a4_on_off;
-
 
     always @(posedge clk) begin
         if (reset) begin
@@ -23,7 +22,6 @@ module adder_fu #(parameter WIDTH = 16) (
             a2_on_off <= 1'b0;
             a3_on_off <= 1'b0;
             a4_on_off <= 1'b0;
-            carry_out_final <= 1'b0;
 
         end else begin
             case (config_in)
@@ -53,7 +51,7 @@ module adder_fu #(parameter WIDTH = 16) (
                 end
             endcase
         end
-        carry_out_final <= carry4;
+        ack <= ack4;
     end
 
     half_adder #( .width(WIDTH) ) adder1 (
@@ -105,7 +103,6 @@ module adder_fu #(parameter WIDTH = 16) (
         .on_off(a4_on_off),
         .ack(ack4)
     );
-
     
 
 endmodule
