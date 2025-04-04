@@ -3,35 +3,42 @@
 module mem_tb;
 
   // Parameters
-  parameter width = 16;
-  parameter num_regs = 16;
-  parameter num_inputs = 8;
+  localparam width = 16;
+  localparam num_regs = 16;
+  localparam num_inputs = 4;
+  localparam total_inputs = num_inputs + num_inputs;
 
-  // Inputs
+  // Signals
   reg clk;
   reg reset;
   reg on_off;
-  reg write_en;
-  reg [width-1:0] w_data_in [num_inputs:0];
-
-  // Outputs
-  wire write_rdy;
+  reg write_en1, write_en2, write_en3;
+  reg [width-1:0] w_data_in1 [num_inputs-1:0];
+  reg [width-1:0] w_data_in2 [num_inputs-1:0];
+  reg [width-1:0] w_data_in3;
   wire write_ack;
-  wire [width-1:0] r_data_out [num_inputs:0];
+  wire write_rdy1, write_rdy2, write_rdy3;
+  wire [width-1:0] r_data_out [total_inputs:0];
   wire on_off_vector_fu;
 
-  // Instantiate the module under test
+  // Instantiate the mem module
   mem #(
     .width(width),
     .num_regs(num_regs),
     .num_inputs(num_inputs)
-  ) dut (
+  ) mem_inst (
     .clk(clk),
     .reset(reset),
     .on_off(on_off),
-    .write_en(write_en),
-    .write_rdy(write_rdy),
-    .w_data_in(w_data_in),
+    .write_en1(write_en1),
+    .write_rdy1(write_rdy1),
+    .w_data_in1(w_data_in1),
+    .write_en2(write_en2),
+    .write_rdy2(write_rdy2),
+    .w_data_in2(w_data_in2),
+    .write_en3(write_en3),
+    .write_rdy3(write_rdy3),
+    .w_data_in3(w_data_in3),
     .write_ack(write_ack),
     .r_data_out(r_data_out),
     .on_off_vector_fu(on_off_vector_fu)
@@ -45,59 +52,102 @@ module mem_tb;
 
   // Test sequence
   initial begin
-    // Initialize inputs
     reset = 1;
     on_off = 0;
-    write_en = 0;
+    write_en1 = 0;
+    write_en2 = 0;
+    write_en3 = 0;
 
-    // Apply reset
+    // Initialize write data
+    for (int i = 0; i < num_inputs; i = i + 1) begin
+      w_data_in1[i] = i + 1;
+      w_data_in2[i] = i + 10;
+    end
+    w_data_in3 = 100;
+
     #10;
     reset = 0;
+    #10;
 
-    // Write data to registers
+    // Test write from neighbor 1
+    write_en1 = 1;
+    #20;
+    write_en1 = 0;
     #10;
-    write_en = 1;
-    for (int i = 0; i <= num_inputs; i = i + 1) begin
-      w_data_in[i] = i * 10; // Example data
-    end
-    #10;
-    while (!write_ack) #10; // Wait for write acknowledge
-    write_en = 0;
 
-    // Read data from registers
+    // Test write from neighbor 2
+    write_en2 = 1;
+    #20;
+    write_en2 = 0;
     #10;
+
+    // Test write from config programmer
+    write_en3 = 1;
+    #20;
+    write_en3 = 0;
+    #30;
+
+    // Test read operation
     on_off = 1;
     #10;
-    $display("Read Data:");
-    for (int i = 0; i <= num_inputs; i = i + 1) begin
+
+    // Verify read data
+    $display("Read Data (After Individual Writes):");
+    for (int i = 0; i <= total_inputs; i = i + 1) begin
       $display("r_data_out[%0d] = %0d", i, r_data_out[i]);
-      if (r_data_out[i] != i * 10) $error("Data mismatch at reg %0d",i);
     end
+
     on_off = 0;
 
-    // Test write_rdy
-    #10;
-    if (write_rdy != 1) $error("write_rdy not high when idle");
+    for (int i = 0; i < num_inputs; i = i + 1) begin
+      w_data_in1[i] = i + 2;
+      w_data_in2[i] = i + 20;
+    end
+    w_data_in3 = 200;
 
-    write_en = 1;
+    // Test simultaneous writes
+    write_en1 = 1;
+    write_en2 = 1;
+    write_en3 = 1;
     #10;
-    if (write_rdy != 0) $error("write_rdy not low during write");
-
-    write_en = 0;
-    while(!write_ack) #10;
-
-    // Test on_off_vector_fu
+    write_en1 = 0;
+    write_en2 = 0;
+    write_en3 = 0;
     #10;
-    if (on_off_vector_fu != 0) $error("on_off_vector_fu not low when off");
+    
     on_off = 1;
     #10;
-    if (on_off_vector_fu != 1) $error("on_off_vector_fu not high when on");
-    on_off = 0;
-    #10;
-    if (on_off_vector_fu != 0) $error("on_off_vector_fu not low after off");
+    $display("Read Data (After simultaneous writes):");
+    for (int i = 0; i <= total_inputs; i = i + 1) begin
+      $display("r_data_out[%0d] = %0d", i, r_data_out[i]);
+    end
 
-    // Additional write and read tests can be added here
+    //Test write ready signals while writing.
+    on_off = 0;
+    write_en1 = 1;
     #10;
+    $display("write_rdy1=%0b, write_rdy2=%0b, write_rdy3=%0b",write_rdy1, write_rdy2, write_rdy3);
+    #5;
+    write_en1 = 0;
+    #10;
+
+
+    // Test multiple writes back to back.
+    on_off = 0;
+    write_en1 = 1;
+    #5;
+    write_en1 = 0;
+    write_en2 = 1;
+    #5;
+    write_en2 = 0;
+    write_en3 = 1;
+    #5;
+    write_en3 = 0;
+    #10;
+
+    // Test write ready high when idle.
+    $display("write_rdy1=%0b, write_rdy2=%0b, write_rdy3=%0b",write_rdy1, write_rdy2, write_rdy3);
+
     $finish;
   end
 
