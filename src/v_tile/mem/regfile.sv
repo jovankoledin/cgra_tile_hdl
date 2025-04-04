@@ -60,7 +60,6 @@ module regfile #(
             for (int i = 0; i < num_regs; i = i + 1) begin
                 registers[i] <= {width{1'b0}};
             end
-            wr_ack <= 1'b0;
 
         end else if (!ren) begin
             // Write port 1
