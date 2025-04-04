@@ -1,3 +1,9 @@
+/*
+Runs add ops based on config mem
+Sends output to neighbor specified by config mem
+
+*/
+
 `timescale 1ns/1ps
 `include "../../src/adder_fu/full_adder.sv"
 `include "../../src/adder_su/half_adder.sv"
@@ -7,7 +13,7 @@ module adder_fu #(parameter WIDTH = 16) (
     input wire reset,
     input wire [WIDTH-1:0] inputs [7:0],
     input wire on_off,
-    input wire [1:0] config_in,
+    input wire [15:0] config_in,
     output reg [WIDTH-1:0] outputs [3:0],
     output reg ack
 );

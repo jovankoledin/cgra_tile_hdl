@@ -1,4 +1,4 @@
-## Simple design of a Vector functional unit enabled CGRA
+## Design of a simple vector functional unit enabled CGRA
 
 By Jovan Koledin  
 
