@@ -6,66 +6,88 @@ Ouputs are sent to neighbor specified in config info
 CGRA network writes configuration data and adder inputs into the local mem
 */
 
+`include "../../../src/v_tile/mem/mem.sv"
+`include "../../../src/v_tile/adder_fu/adder_fu.sv"
+
 `timescale 1ns/1ps
-`include "../../src/config_mem/regfile.sv"
+
 module v_tile #(
-    parameter width = 16, 
-    num_regs = 16, 
-    num_inputs = 8) (
-
+    parameter width = 16, // Bit width of each register element
+    parameter num_inputs = 4, // Num regs for each neighbor input to mem reg file
+    parameter num_regs = 16, // Num elements in mem reg file
+    parameter total_inputs = num_inputs + num_inputs // Num elements to each adder fu execution 
+) (
     input wire clk,
     input wire reset,
-    input wire on_off, // Signal for vector fu to tell it to start data reading and op execution (toggled each execution cycle)
+    input wire on_off, // Signal for vector fu to tell it to start data reading and op execution (toggled each cycle)
 
-    // CGRA network port
-    // Data is written to config_mem
-    input wire write_en, //Stays high for duration of wrtie, until write_ack is set high
-    output reg write_rdy,
-    input wire [width-1:0] w_data_in [num_inputs:0],
-    output reg write_ack,
+    // CGRA network port from neighbor 1 (input/write)
+    input wire write_en1, // Stays high for duration of write, until write_ack is set high
+    output wire write_rdy1,
+    input wire [width-1:0] w_data_in1 [num_inputs-1:0],
+
+    // CGRA network port from neighbor 2 (input/write)
+    input wire write_en2, // Stays high for duration of write, until write_ack is set high
+    output wire write_rdy2,
+    input wire [width-1:0] w_data_in2 [num_inputs-1:0],
+
+    // CGRA network port from config mem programmer (input/write)
+    input wire write_en3, // Stays high for duration of write, until write_ack is set high
+    output wire write_rdy3,
+    input wire [width-1:0] w_data_in3,
+
+    output wire write_ack,
+
+    // Vector fu port (output/read), access all register file data, vector fu inputs and config data
+    output wire [width-1:0] adder_outputs [num_inputs-1:0],
+    output wire [3:0] dest_info,
+    output wire adder_ack
 );
 
-  // Parameters
-  parameter width = 16;
-  parameter num_regs = 16;
-  parameter num_inputs = 8;
+    // Internal signals
+    wire [width-1:0] r_data_out [total_inputs:0];
+    wire on_off_vector_fu;
+    wire [15:0] config_in;
 
-  // Inputs
-  reg clk;
-  reg reset;
-  reg on_off;
-  reg write_en;
-  reg [width-1:0] w_data_in [num_inputs:0];
+    // Instantiate mem module
+    mem #(
+        .width(width),
+        .num_regs(num_regs),
+        .num_inputs(num_inputs)
+    ) mem_inst (
+        .clk(clk),
+        .reset(reset),
+        .on_off(on_off),
+        .write_en1(write_en1),
+        .write_rdy1(write_rdy1),
+        .w_data_in1(w_data_in1),
+        .write_en2(write_en2),
+        .write_rdy2(write_rdy2),
+        .w_data_in2(w_data_in2),
+        .write_en3(write_en3),
+        .write_rdy3(write_rdy3),
+        .w_data_in3(w_data_in3),
+        .write_ack(write_ack),
+        .r_data_out(r_data_out),
+        .on_off_vector_fu(on_off_vector_fu)
+    );
 
-  // Outputs
-  wire write_rdy;
-  wire write_ack;
-  wire [width-1:0] r_data_out [num_inputs:0];
-  wire on_off_vector_fu;
+    // Get config from mem
+    assign config_in = r_data_out[total_inputs];
 
-  // Instantiate the module under test
-  config_mem #(
-    .width(width),
-    .num_regs(num_regs),
-    .num_inputs(num_inputs)
-  ) dut (
-    .clk(clk),
-    .reset(reset),
-    .on_off(on_off),
-    .write_en(write_en),
-    .write_rdy(write_rdy),
-    .w_data_in(w_data_in),
-    .write_ack(write_ack),
-    .r_data_out(r_data_out),
-    .on_off_vector_fu(on_off_vector_fu)
-  );
+    // Instantiate adder_fu module
+    adder_fu #(
+        .width(width),
+        .num_inputs(num_inputs)
+    ) adder_fu_inst (
+        .clk(clk),
+        .reset(reset),
+        .inputs(r_data_out), // Connect mem output to adder input
+        .on_off(on_off_vector_fu), // Connect on_off_vector_fu to adder's on_off
+        .config_in(config_in),
+        .outputs(adder_outputs),
+        .dest_info(dest_info),
+        .ack(adder_ack)
+    );
 
-module adder_fu #(parameter WIDTH = 16) (
-    input wire clk,
-    input wire reset,
-    input wire [WIDTH-1:0] inputs [7:0],
-    input wire on_off,
-    input wire [1:0] config_in,
-    output reg [WIDTH-1:0] outputs [3:0],
-    output reg ack
-);
+endmodule
