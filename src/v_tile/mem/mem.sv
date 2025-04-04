@@ -5,9 +5,9 @@ cgra network will write data to the regfile.
 */
 
 `timescale 1ns/1ps
-`include "../../src/config_mem/regfile.sv"
+`include "../../src/mem/regfile.sv"
 
-module config_mem #(
+module mem #(
     parameter width = 16, 
     num_regs = 16, 
     num_inputs = 8) (
@@ -17,7 +17,7 @@ module config_mem #(
     input wire on_off, // Signal for vector fu to tell it to start data reading and op execution (toggled each cycle)
 
     // CGRA network port (write)
-    input wire write_en, //Stays high for duration of wrtie, until write_ack is set high
+    input wire write_en, //Stays high for duration of write, until write_ack is set high
     output reg write_rdy,
     input wire [width-1:0] w_data_in [num_inputs:0],
     output reg write_ack,

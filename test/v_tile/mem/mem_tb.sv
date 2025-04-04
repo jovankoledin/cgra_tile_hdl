@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module config_mem_tb;
+module mem_tb;
 
   // Parameters
   parameter width = 16;
@@ -21,7 +21,7 @@ module config_mem_tb;
   wire on_off_vector_fu;
 
   // Instantiate the module under test
-  config_mem #(
+  mem #(
     .width(width),
     .num_regs(num_regs),
     .num_inputs(num_inputs)
