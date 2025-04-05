@@ -17,7 +17,9 @@ module regfile_tb;
     reg [WIDTH-1:0] w_data2 [NUM_INPUTS-1:0];
     reg [WIDTH-1:0] w_data3;
     wire [WIDTH-1:0] r_data [TOTAL_INPUTS:0];
-    wire wr_ack;
+    wire wr_ack1;
+    wire wr_ack2;
+    wire wr_ack3;
 
     regfile #(
         .width(WIDTH),
@@ -33,8 +35,10 @@ module regfile_tb;
         .w_data1(w_data1),
         .w_data2(w_data2),
         .w_data3(w_data3),
-        .r_data(r_data),
-        .wr_ack(wr_ack)
+        .wr_ack1(wr_ack1),
+        .wr_ack2(wr_ack2),
+        .wr_ack3(wr_ack3),
+        .r_data(r_data)
     );
 
     initial begin
@@ -69,7 +73,9 @@ module regfile_tb;
         wen3 = 1;
         w_data3 = 16'hBBBB;
         #50;
-        $display("wr_ack=%b", wr_ack);
+        $display("wr_ack1=%b", wr_ack1);
+        $display("wr_ack2=%b", wr_ack2);
+        $display("wr_ack3=%b", wr_ack3);
 
         wen1 = 0;
         wen2 = 0;
@@ -79,7 +85,9 @@ module regfile_tb;
         ren = 1;
         #50;
         $display("Read with ren=1: r_data[4]=%h", r_data[4]);
-        $display("wr_ack=%b", wr_ack);
+        $display("wr_ack1=%b", wr_ack1);
+        $display("wr_ack2=%b", wr_ack2);
+        $display("wr_ack3=%b", wr_ack3);
 
         // Read data from registers (ren = 0)
         ren = 0;
@@ -103,7 +111,9 @@ module regfile_tb;
         ren = 1;
         #10;
         $display("Read after simultaneous writes: r_data[0],[4]=%h, %h", r_data[0], r_data[4]);
-        $display("wr_ack=%b", wr_ack);
+        $display("wr_ack1=%b", wr_ack1);
+        $display("wr_ack2=%b", wr_ack2);
+        $display("wr_ack3=%b", wr_ack3);
 
         // Test ren = 1 during write attempts.
         wen1 = 1;
@@ -116,8 +126,10 @@ module regfile_tb;
         ren = 1;
         #10;
         $display("Read after ren==1 and wen1==1 write attempt: r_data[0]=%h",r_data[0]);
-        $display("wr_ack=%b", wr_ack);
-
+        $display("wr_ack1=%b", wr_ack1);
+        $display("wr_ack2=%b", wr_ack2);
+        $display("wr_ack3=%b", wr_ack3);
+        
         $finish;
     end
 
