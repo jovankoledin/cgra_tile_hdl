@@ -17,6 +17,7 @@ module regfile_tb;
     reg [WIDTH-1:0] w_data2 [NUM_INPUTS-1:0];
     reg [WIDTH-1:0] w_data3;
     wire [WIDTH-1:0] r_data [TOTAL_INPUTS:0];
+    wire r_data_vld;
     wire wr_ack1;
     wire wr_ack2;
     wire wr_ack3;
@@ -38,7 +39,8 @@ module regfile_tb;
         .wr_ack1(wr_ack1),
         .wr_ack2(wr_ack2),
         .wr_ack3(wr_ack3),
-        .r_data(r_data)
+        .r_data(r_data),
+        .r_data_vld(r_data_vld)
     );
 
     initial begin
@@ -84,6 +86,7 @@ module regfile_tb;
         // Read data from registers (ren = 1)
         ren = 1;
         #50;
+        wait(r_data_vld);
         $display("Read with ren=1: r_data[4]=%h", r_data[4]);
         $display("wr_ack1=%b", wr_ack1);
         $display("wr_ack2=%b", wr_ack2);

@@ -2,153 +2,136 @@
 
 module mem_tb;
 
-  // Parameters
-  localparam width = 16;
-  localparam num_regs = 16;
-  localparam num_inputs = 4;
-  localparam total_inputs = num_inputs + num_inputs;
+    localparam width = 16;
+    localparam num_inputs = 4;
+    localparam num_regs = 16;
+    localparam total_inputs = num_inputs * 2;
 
-  // Signals
-  reg clk;
-  reg reset;
-  reg on_off;
-  reg write_en1, write_en2, write_en3;
-  reg [width-1:0] w_data_in1 [num_inputs-1:0];
-  reg [width-1:0] w_data_in2 [num_inputs-1:0];
-  reg [width-1:0] w_data_in3;
-  wire write_ack;
-  wire write_rdy1, write_rdy2, write_rdy3;
-  wire [width-1:0] r_data_out [total_inputs:0];
-  wire on_off_vector_fu;
+    logic clk;
+    logic reset;
+    logic on_off;
 
-  // Instantiate the mem module
-  mem #(
-    .width(width),
-    .num_regs(num_regs),
-    .num_inputs(num_inputs)
-  ) mem_inst (
-    .clk(clk),
-    .reset(reset),
-    .on_off(on_off),
-    .write_en1(write_en1),
-    .write_rdy1(write_rdy1),
-    .w_data_in1(w_data_in1),
-    .write_en2(write_en2),
-    .write_rdy2(write_rdy2),
-    .w_data_in2(w_data_in2),
-    .write_en3(write_en3),
-    .write_rdy3(write_rdy3),
-    .w_data_in3(w_data_in3),
-    .write_ack(write_ack),
-    .r_data_out(r_data_out),
-    .on_off_vector_fu(on_off_vector_fu)
-  );
+    logic write_en1, write_en2, write_en3;
+    logic write_rdy1, write_rdy2, write_rdy3;
+    logic [width-1:0] w_data_in1 [num_inputs-1:0];
+    logic [width-1:0] w_data_in2 [num_inputs-1:0];
+    logic [width-1:0] w_data_in3;
+    logic write_ack1, write_ack2, write_ack3;
+    logic [width-1:0] vec1 [num_inputs-1:0];
+    logic [width-1:0] vec2 [num_inputs-1:0];
+    logic [width-1:0] config_value;
 
-  // Clock generation
-  initial begin
-    clk = 0;
-    forever #5 clk = ~clk;
-  end
+    logic [width-1:0] config_in;
+    wire [width-1:0] adder_inputs [total_inputs-1:0];
+    logic on_off_vector_fu, r_data_vld;
 
-  // Test sequence
-  initial begin
-    reset = 1;
-    on_off = 0;
-    write_en1 = 0;
-    write_en2 = 0;
-    write_en3 = 0;
+    // Instantiate DUT
+    mem #(
+        .width(width),
+        .num_regs(num_regs),
+        .num_inputs(num_inputs)
+    ) dut (
+        .clk(clk),
+        .reset(reset),
+        .on_off(on_off),
+        .write_en1(write_en1),
+        .write_rdy1(write_rdy1),
+        .w_data_in1(w_data_in1),
+        .write_ack1(write_ack1),
+        .write_en2(write_en2),
+        .write_rdy2(write_rdy2),
+        .w_data_in2(w_data_in2),
+        .write_ack2(write_ack2),
+        .write_en3(write_en3),
+        .write_rdy3(write_rdy3),
+        .w_data_in3(w_data_in3),
+        .write_ack3(write_ack3),
+        .config_in(config_in),
+        .adder_inputs(adder_inputs),
+        .r_data_vld(r_data_vld),
+        .on_off_vector_fu(on_off_vector_fu)
+    );
 
-    // Initialize write data
-    for (int i = 0; i < num_inputs; i = i + 1) begin
-      w_data_in1[i] = i + 1;
-      w_data_in2[i] = i + 10;
+    // Clock generation
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0;
+        reset = 1;
+        on_off = 0;
+
+        write_en1 = 0;
+        write_en2 = 0;
+        write_en3 = 0;
+
+        #20 reset = 0;
+
+
+        config_value = 16'h1;
+
+        // Load test data
+        for (int i = 0; i < num_inputs; i++) begin
+            w_data_in1[i] = i + 1;
+            w_data_in2[i] = (i + 1) * 10;
+        end
+
+        // === CONFIG WRITE ===
+        fork
+            begin
+                wait(write_rdy3);
+                w_data_in3 = config_value;
+                write_en3 = 1;
+                wait(write_ack3);
+                write_en3 = 0;
+                $display("Wrote config: %h", config_value);
+            end
+        join
+
+        // === PARALLEL VECTOR WRITES ===
+        fork
+            begin
+                wait(write_rdy1);
+                write_en1 = 1;
+                wait(write_ack1);
+                write_en1 = 0;
+                $display("Wrote vec1");
+            end
+            begin
+                wait(write_rdy2);
+                write_en2 = 1;
+                wait(write_ack2);
+                write_en2 = 0;
+                $display("Wrote vec2");
+            end
+        join
+
+        // === TRIGGER READ ===
+        #10 on_off = 1;
+        wait(r_data_vld);
+        #10
+        $display("on_off_vector_fu=%0b", on_off_vector_fu);
+
+
+        // === CHECK OUTPUTS ===
+        for (int i = 0; i < num_inputs; i++) begin
+            if (adder_inputs[i] !== w_data_in1[i])
+                $display("FAIL: adder_inputs[%0d] = %h != %h", i, adder_inputs[i], w_data_in1[i]);
+            else
+                $display("PASS: adder_inputs[%0d] = %h", i, adder_inputs[i]);
+
+            if (adder_inputs[i + num_inputs] !== w_data_in2[i])
+                $display("FAIL: adder_inputs[%0d] = %h != %h", i + num_inputs, adder_inputs[i + num_inputs], w_data_in2[i]);
+            else
+                $display("PASS: adder_inputs[%0d] = %h", i + num_inputs, adder_inputs[i + num_inputs]);
+        end
+
+        if (config_in !== config_value)
+            $display("FAIL: config_in = %h != %h", config_in, config_value);
+        else
+            $display("PASS: config_in = %h", config_in);
+
+        on_off = 0;
+        $finish;
     end
-    w_data_in3 = 100;
-
-    #10;
-    reset = 0;
-    #10;
-
-    // Test write from neighbor 1
-    write_en1 = 1;
-    #20;
-    write_en1 = 0;
-    #10;
-
-    // Test write from neighbor 2
-    write_en2 = 1;
-    #20;
-    write_en2 = 0;
-    #10;
-
-    // Test write from config programmer
-    write_en3 = 1;
-    #20;
-    write_en3 = 0;
-    #30;
-
-    // Test read operation
-    on_off = 1;
-    #10;
-
-    // Verify read data
-    $display("Read Data (After Individual Writes):");
-    for (int i = 0; i <= total_inputs; i = i + 1) begin
-      $display("r_data_out[%0d] = %0d", i, r_data_out[i]);
-    end
-
-    on_off = 0;
-
-    for (int i = 0; i < num_inputs; i = i + 1) begin
-      w_data_in1[i] = i + 2;
-      w_data_in2[i] = i + 20;
-    end
-    w_data_in3 = 200;
-
-    // Test simultaneous writes
-    write_en1 = 1;
-    write_en2 = 1;
-    write_en3 = 1;
-    #10;
-    write_en1 = 0;
-    write_en2 = 0;
-    write_en3 = 0;
-    #10;
-    
-    on_off = 1;
-    #10;
-    $display("Read Data (After simultaneous writes):");
-    for (int i = 0; i <= total_inputs; i = i + 1) begin
-      $display("r_data_out[%0d] = %0d", i, r_data_out[i]);
-    end
-
-    //Test write ready signals while writing.
-    on_off = 0;
-    write_en1 = 1;
-    #10;
-    $display("write_rdy1=%0b, write_rdy2=%0b, write_rdy3=%0b",write_rdy1, write_rdy2, write_rdy3);
-    #5;
-    write_en1 = 0;
-    #10;
-
-
-    // Test multiple writes back to back.
-    on_off = 0;
-    write_en1 = 1;
-    #5;
-    write_en1 = 0;
-    write_en2 = 1;
-    #5;
-    write_en2 = 0;
-    write_en3 = 1;
-    #5;
-    write_en3 = 0;
-    #10;
-
-    // Test write ready high when idle.
-    $display("write_rdy1=%0b, write_rdy2=%0b, write_rdy3=%0b",write_rdy1, write_rdy2, write_rdy3);
-
-    $finish;
-  end
 
 endmodule
