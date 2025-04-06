@@ -63,14 +63,14 @@ module v_tile_tb;
         #20 reset = 0;
 
         // Assign test vectors
-        w_data_in1[0] = 16'h0001;
-        w_data_in2[0] = 16'h0002;
-        w_data_in1[1] = 16'h0003;
-        w_data_in2[1] = 16'h0004;
-        w_data_in1[2] = 16'h0005;
-        w_data_in2[2] = 16'h0006;
-        w_data_in1[3] = 16'h0007;
-        w_data_in2[3] = 16'h0008;
+        w_data_in1[0] = 16'hFFFF;
+        w_data_in1[1] = 16'hFFFF;
+        w_data_in1[2] = 16'h0000;
+        w_data_in1[3] = 16'h0000;
+        w_data_in2[0] = 16'hFFFF;
+        w_data_in2[1] = 16'h0000;
+        w_data_in2[2] = 16'hFFFF;
+        w_data_in2[3] = 16'h0000;
 
         // Expected sum
         expected[0] = w_data_in1[0] + w_data_in1[1];
@@ -81,7 +81,7 @@ module v_tile_tb;
 
         // Write config (no need for fork here)
         wait (write_rdy3);
-        w_data_in3 = 16'b0000000000000000;
+        w_data_in3 = 16'b0000000000000011;
         write_en3 = 1;
         wait (write_ack3);
         write_en3 = 0;
@@ -105,7 +105,7 @@ module v_tile_tb;
 
         // Fire computation
         #10 on_off = 1;
-        wait(adder_ack);
+        #15
         // Output verification
         for (i = 0; i < num_inputs; i++) begin
             if (adder_outputs[i] !== expected[i])
