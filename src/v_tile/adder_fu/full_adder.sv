@@ -18,10 +18,10 @@ module full_adder #(parameter width = 16) (
             ack <= 1'b0;
         end else begin
             if (carry_listen) begin
-                {carry_out, c} <= a + b + carry_in;
+                {carry_out, c} = a + b + carry_in;
                 ack <= 1'b1;
             end else begin
-                {carry_out, c} <= a + b;
+                {carry_out, c} = a + b;
                 ack <= 1'b1;
             end
         end

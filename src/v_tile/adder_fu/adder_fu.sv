@@ -4,8 +4,8 @@ Sends output to neighbor specified by config mem
 */
 
 `timescale 1ns/1ps
-`include "../../../src/v_tile/adder_fu/full_adder.sv"
-`include "../../../src/v_tile/adder_fu/half_adder.sv"
+`include "../../src/v_tile/adder_fu/full_adder.sv"
+`include "../../src/v_tile/adder_fu/half_adder.sv"
 
 module adder_fu #(
     parameter width = 16,
@@ -37,25 +37,25 @@ module adder_fu #(
             a3_on_off <= 1'b0;
             a4_on_off <= 1'b0;
 
-        end else begin
+        end else if (on_off) begin
             case (adder_config)
                 2'd0: begin // 4x16b adders
-                    a1_on_off <= on_off;
-                    a2_on_off <= on_off;
-                    a3_on_off <= on_off;
-                    a4_on_off <= on_off;
+                    a1_on_off <= 1'b1;
+                    a2_on_off <= 1'b1;
+                    a3_on_off <= 1'b1;
+                    a4_on_off <= 1'b1;
                 end
                 2'd1: begin // 2x32b adders
-                    a1_on_off <= on_off;
-                    a2_on_off <= on_off && ack1;
-                    a3_on_off <= on_off;
-                    a4_on_off <= on_off && ack3;
+                    a1_on_off <= 1'b1;
+                    a2_on_off <= a1_on_off;
+                    a3_on_off <= 1'b1;
+                    a4_on_off <= a3_on_off;
                 end
                 2'd3: begin // 1x64b adder
-                    a1_on_off <= on_off;
-                    a2_on_off <= on_off && ack1;
-                    a3_on_off <= on_off && ack2;
-                    a4_on_off <= on_off && ack3;
+                    a1_on_off <= 1'b1;
+                    a2_on_off <= a1_on_off;
+                    a3_on_off <= a2_on_off;
+                    a4_on_off <= a3_on_off;
                 end
                 default: begin
                     a1_on_off <= 1'b0;
@@ -64,15 +64,22 @@ module adder_fu #(
                     a4_on_off <= 1'b0;
                 end
             endcase
+        end else begin
+                a1_on_off <= 1'b0;
+                a2_on_off <= 1'b0;
+                a3_on_off <= 1'b0;
+                a4_on_off <= 1'b0;
         end
-        ack <= ack4;
+
     end
+
+    assign ack = ack4;
 
     half_adder #( .width(width) ) adder1 (
         .clk(clk),
         .reset(reset),
         .a(inputs[0]),
-        .b(inputs[1]),
+        .b(inputs[4]),
         .c(outputs[0]),
         .carry_out(carry1),
         .ack(ack1),
@@ -82,8 +89,8 @@ module adder_fu #(
     full_adder #( .width(width) ) adder2 (
         .clk(clk),
         .reset(reset),
-        .a(inputs[2]),
-        .b(inputs[3]),
+        .a(inputs[1]),
+        .b(inputs[5]),
         .c(outputs[1]),
         .carry_in(carry1),
         .carry_out(carry2),
@@ -95,8 +102,8 @@ module adder_fu #(
     full_adder #( .width(width) ) adder3 (
         .clk(clk),    
         .reset(reset),
-        .a(inputs[4]),
-        .b(inputs[5]),
+        .a(inputs[2]),
+        .b(inputs[6]),
         .c(outputs[2]),
         .carry_in(carry2),
         .carry_out(carry3),
@@ -108,7 +115,7 @@ module adder_fu #(
     full_adder #( .width(width) ) adder4 (
         .clk(clk),
         .reset(reset),
-        .a(inputs[6]),
+        .a(inputs[3]),
         .b(inputs[7]),
         .c(outputs[3]),
         .carry_in(carry3),

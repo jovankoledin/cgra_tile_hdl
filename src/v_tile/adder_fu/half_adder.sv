@@ -15,7 +15,7 @@ module half_adder #(parameter width = 16) (
             carry_out <= 1'b0;
             ack <= 1'b0;
         end else begin
-            {carry_out, c} <= a + b;
+            {carry_out, c} = a + b;
             ack <= 1'b1;
         end
     end

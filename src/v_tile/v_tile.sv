@@ -6,8 +6,8 @@ Ouputs are sent to neighbor specified in config info
 CGRA network writes configuration data and adder inputs into the local mem
 */
 
-`include "../../../src/v_tile/mem/mem.sv"
-`include "../../../src/v_tile/adder_fu/adder_fu.sv"
+`include "../../src/v_tile/mem/mem.sv"
+`include "../../src/v_tile/adder_fu/adder_fu.sv"
 
 `timescale 1ns/1ps
 
@@ -25,18 +25,19 @@ module v_tile #(
     input wire write_en1, // Stays high for duration of write, until write_ack is set high
     output wire write_rdy1,
     input wire [width-1:0] w_data_in1 [num_inputs-1:0],
+    output wire write_ack1,
 
     // CGRA network port from neighbor 2 (input/write)
     input wire write_en2, // Stays high for duration of write, until write_ack is set high
     output wire write_rdy2,
     input wire [width-1:0] w_data_in2 [num_inputs-1:0],
+    output wire write_ack2,
 
     // CGRA network port from config mem programmer (input/write)
     input wire write_en3, // Stays high for duration of write, until write_ack is set high
     output wire write_rdy3,
     input wire [width-1:0] w_data_in3,
-
-    output wire write_ack,
+    output wire write_ack3,
 
     // Vector fu port (output/read), access all register file data, vector fu inputs and config data
     output wire [width-1:0] adder_outputs [num_inputs-1:0],
@@ -45,7 +46,7 @@ module v_tile #(
 );
 
     // Internal signals
-    wire [width-1:0] r_data_out [total_inputs:0];
+    wire [width-1:0] adder_inputs [total_inputs-1:0];
     wire on_off_vector_fu;
     wire [15:0] config_in;
 
@@ -61,19 +62,19 @@ module v_tile #(
         .write_en1(write_en1),
         .write_rdy1(write_rdy1),
         .w_data_in1(w_data_in1),
+        .write_ack1(write_ack1),
         .write_en2(write_en2),
         .write_rdy2(write_rdy2),
         .w_data_in2(w_data_in2),
+        .write_ack2(write_ack2),
         .write_en3(write_en3),
         .write_rdy3(write_rdy3),
         .w_data_in3(w_data_in3),
-        .write_ack(write_ack),
-        .r_data_out(r_data_out),
+        .write_ack3(write_ack3),
+        .config_in(config_in),
+        .adder_inputs(adder_inputs),
         .on_off_vector_fu(on_off_vector_fu)
     );
-
-    // Get config from mem
-    assign config_in = r_data_out[total_inputs];
 
     // Instantiate adder_fu module
     adder_fu #(
@@ -82,7 +83,7 @@ module v_tile #(
     ) adder_fu_inst (
         .clk(clk),
         .reset(reset),
-        .inputs(r_data_out), // Connect mem output to adder input
+        .inputs(adder_inputs), // Connect mem output to adder input
         .on_off(on_off_vector_fu), // Connect on_off_vector_fu to adder's on_off
         .config_in(config_in),
         .outputs(adder_outputs),
