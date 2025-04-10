@@ -1,4 +1,4 @@
-## Design of a simple vector tile for a CGRA
+## HDL Design of tiles for CGRAs
 
 _Currently only tested Vector Tile_
 
