@@ -1,6 +1,6 @@
-## Design of a simple vector functional unit enabled CGRA
+## HDL Design of tiles for CGRAs
 
-_Currently only finished building Vector Tile_
+_Currently only tested Vector Tile_
 
 By Jovan Koledin  
 
