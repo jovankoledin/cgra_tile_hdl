@@ -1,3 +1,10 @@
+/*
+Responsible for loading and storing data to/from main memory block
+Can load two 64bit values from main memory simultaneoulsy 
+Can write one 64 bit result to either a neighbor tile or main memory block
+
+*/
+
 module full_adder #(parameter width = 16) (
     input wire clk,
     input wire reset,
