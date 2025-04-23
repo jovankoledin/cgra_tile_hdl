@@ -1,4 +1,4 @@
-module adder_fu #(parameter width = 16) (
+module adder_fu #(parameter width = 32) (
     input wire clk,
     input wire reset,
     input wire [width-1:0] a,

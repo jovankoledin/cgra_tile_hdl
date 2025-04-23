@@ -15,17 +15,22 @@ module regfile #(
     input wire clk,
     input wire reset,
     
-    // Read port - Vector FU
-    input wire ren,
-    output reg [width-1:0] r_data [total_inputs:0],
-    output reg r_data_vld,
+    // Read port 1 
+    input wire ren1,
+    output reg [width-1:0] r_data1 [total_inputs:0],
+    output reg r_data_vld1,
     
-    // Write port 1 - CGRA network neighbor 1 (Writes to first set of regs)
+    // Read port 2 
+    input wire ren2,
+    output reg [width-1:0] r_data2 [total_inputs:0],
+    output reg r_data_vld2,
+    
+    // Write port 1 
     input wire wen1,
     input wire [width-1:0] w_data1 [num_inputs-1:0],
     output reg wr_ack1,
 
-    // Write port 2 - CGRA network neighbor 2 (Writes to second set of regs)
+    // Write port 2 
     input wire wen2,
     input wire [width-1:0] w_data2 [num_inputs-1:0],
     output reg wr_ack2,
@@ -39,20 +44,37 @@ module regfile #(
     // Register file
     reg [width-1:0] registers [0:num_regs-1];
 
-    // Read operation (combinational) always reads entire regfile
+    // Read operation 1 (combinational) always reads entire regfile
     always @(*) begin
         // Vector FU is reading input vector and config data
-        if (ren) begin
+        if (ren1) begin
             for (int i = 0; i <= total_inputs; i += 1 ) begin
-                r_data[i] = registers[i]; // Input vector elements ...
+                r_data1[i] = registers[i]; // Input vector elements ...
             end
-            r_data_vld = 1'b1;
+            r_data_vld1 = 1'b1;
         // Zero-out outputs on reset
         end else begin
             for (int i = 0; i <= total_inputs; i += 1) begin
-                r_data[i] = {width{1'b0}}; // Input vector elements ...
+                r_data1[i] = {width{1'b0}}; // Input vector elements ...
             end
-            r_data_vld = 1'b0;
+            r_data_vld1 = 1'b0;
+        end
+    end
+
+    // Read operation 2 (combinational) always reads entire regfile
+    always @(*) begin
+        // Vector FU is reading input vector and config data
+        if (ren2) begin
+            for (int i = 0; i <= total_inputs; i += 1 ) begin
+                r_data2[i] = registers[i]; // Input vector elements ...
+            end
+            r_data_vld2 = 1'b1;
+        // Zero-out outputs on reset
+        end else begin
+            for (int i = 0; i <= total_inputs; i += 1) begin
+                r_data2[i] = {width{1'b0}}; // Input vector elements ...
+            end
+            r_data_vld2 = 1'b0;
         end
     end
 

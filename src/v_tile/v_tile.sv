@@ -39,7 +39,7 @@ module v_tile #(
     input wire [width-1:0] w_data_in3,
     output wire write_ack3,
 
-    // Vector fu port (output/read), access all register file data, vector fu inputs and config data
+    // Vector fu port (output/read)
     output wire [width-1:0] adder_outputs [num_inputs-1:0],
     output wire [3:0] dest_info,
     output wire adder_ack
