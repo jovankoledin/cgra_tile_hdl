@@ -23,10 +23,6 @@
 // config_i[6:4]: addr_idx (3 bits)
 // config_i[9:7]: data_idx1 (3 bits)
 // config_i[12:10]: data_idx2 (3 bits) 
-`define CONFIG_IS_READ_MASK 1 << `CONFIG_OFFSET
-`define CONFIG_ADDR_IDX_MASK ((1 << `REG_SET_IDX_WIDTH) - 1) << (`CONFIG_OFFSET + 1)
-`define CONFIG_DATA_IDX1_MASK ((1 << `REG_SET_IDX_WIDTH) - 1) << (`CONFIG_OFFSET + 1 + `REG_SET_IDX_WIDTH)
-`define CONFIG_DATA_IDX2_MASK ((1 << `REG_SET_IDX_WIDTH) - 1) << (`CONFIG_OFFSET + 1 + `REG_SET_IDX_WIDTH * 2)
 
 
 module tb_main_mem_fu;
@@ -37,7 +33,7 @@ module tb_main_mem_fu;
     logic on_off;
 
     // DUT interface signals
-    logic [`ADDR_SIZE-1:0] config;
+    logic [`ADDR_SIZE-1:0] configs;
     logic [`ADDR_SIZE-1:0] addr1;
     logic [`ADDR_SIZE-1:0] addr2;
 
@@ -95,7 +91,7 @@ module tb_main_mem_fu;
         .clk_i(clk),
         .reset_i(reset),
         .on_off_i(on_off),
-        .config_i(config),
+        .config_i(configs),
         .addr1_o(addr1),
         .addr2_o(addr2),
         .read_en1_o(read_en1),
@@ -146,7 +142,7 @@ module tb_main_mem_fu;
         if (read_en1) begin
             // Simulate read access delay
             #MEM_ACCESS_DELAY;
-            if (addr1 < `MAIN_MEM_SIZE) begin
+            if (addr1 < MAIN_MEM_SIZE) begin
                 r_data1 <= main_memory[addr1];
             end else begin
                 $display("Main Memory Read Error: Address 0x%h out of bounds at time %0t", addr1, $time);
@@ -160,7 +156,7 @@ module tb_main_mem_fu;
         if (read_en2) begin
              // Simulate read access delay
             #MEM_ACCESS_DELAY;
-            if (addr2 < `MAIN_MEM_SIZE) begin
+            if (addr2 < MAIN_MEM_SIZE) begin
                 r_data2 <= main_memory[addr2];
             end else begin
                 $display("Main Memory Read Error: Address 0x%h out of bounds at time %0t", addr2, $time);
@@ -177,7 +173,7 @@ module tb_main_mem_fu;
         if (write_en1) begin
             // Simulate write access delay
             #MEM_ACCESS_DELAY;
-            if (addr1 < `MAIN_MEM_SIZE) begin
+            if (addr1 < MAIN_MEM_SIZE) begin
                 main_memory[addr1] <= w_data1;
                 $display("Main Memory Write: Addr 0x%h <= Data 0x%h at time %0t", addr1, w_data1, $time);
             end else begin
@@ -191,7 +187,7 @@ module tb_main_mem_fu;
          if (write_en2) begin
             // Simulate write access delay
             #MEM_ACCESS_DELAY;
-            if (addr2 < `MAIN_MEM_SIZE) begin
+            if (addr2 < MAIN_MEM_SIZE) begin
                 main_memory[addr2] <= w_data2;
                 $display("Main Memory Write: Addr 0x%h <= Data 0x%h at time %0t", addr2, w_data2, $time);
             end else begin
@@ -224,7 +220,7 @@ module tb_main_mem_fu;
     always_ff @(posedge clk) begin
         if (reg_read1) begin
             #REG_ACCESS_DELAY;
-            if (reg_set1_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for addresses
+            if (reg_set1_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for addresses
                 // DUT expects 32 bits for addresses, packed as {addr2, addr1}
                 reg_data1_out <= register_file[reg_set1_idx][0]; // Assuming index 0 holds the packed addresses
                 $display("RegFile Read 1: Set %0d, Index 0 -> Data 0x%h at time %0t", reg_set1_idx, register_file[reg_set1_idx][0], $time);
@@ -239,7 +235,7 @@ module tb_main_mem_fu;
 
          if (reg_read2) begin
             #REG_ACCESS_DELAY;
-            if (reg_set2_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for data
+            if (reg_set2_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for data
                 // DUT expects 32 bits for data2
                 reg_data2_out <= register_file[reg_set2_idx][0]; // Assuming index 0 holds data
                  $display("RegFile Read 2: Set %0d, Index 0 -> Data 0x%h at time %0t", reg_set2_idx, register_file[reg_set2_idx][0], $time);
@@ -258,7 +254,7 @@ module tb_main_mem_fu;
     always_ff @(posedge clk) begin
         if (reg_write1) begin
             #REG_ACCESS_DELAY;
-             if (reg_set1_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for data
+             if (reg_set1_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for data
                 register_file[reg_set1_idx][0] <= reg_data1_in;
                 $display("RegFile Write 1: Set %0d, Index 0 <= Data 0x%h at time %0t", reg_set1_idx, reg_data1_in, $time);
             end else begin
@@ -271,7 +267,7 @@ module tb_main_mem_fu;
 
          if (reg_write2) begin
             #REG_ACCESS_DELAY;
-             if (reg_set2_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for data
+             if (reg_set2_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for data
                 register_file[reg_set2_idx][0] <= reg_data2_in;
                 $display("RegFile Write 2: Set %0d, Index 0 <= Data 0x%h at time %0t", reg_set2_idx, reg_data2_in, $time);
             end else begin
@@ -289,14 +285,14 @@ module tb_main_mem_fu;
         // Initialize signals
         reset = 1;
         on_off = 0;
-        config = {`ADDR_SIZE{1'b0}};
+        configs = {`ADDR_SIZE{1'b0}};
 
         // Initialize memory and register file
-        for (int i = 0; i < `MAIN_MEM_SIZE; i++) begin
+        for (int i = 0; i < MAIN_MEM_SIZE; i++) begin
             main_memory[i] = i; // Initialize with some pattern
         end
-        for (int i = 0; i < `REG_FILE_SETS; i++) begin
-            for (int j = 0; j < `REG_FILE_SIZE; j++) begin
+        for (int i = 0; i < REG_FILE_SETS; i++) begin
+            for (int j = 0; j < REG_FILE_SIZE; j++) begin
                 register_file[i][j] = {`DATA_WIDTH{1'b0}};
             end
         end
@@ -312,10 +308,7 @@ module tb_main_mem_fu;
         // Configure for write: is_read=0, addr_idx=1, data_idx1=2, data_idx2=3
         // Addresses will be read from regfile set 1, index 0
         // Write data will be read from regfile set 2, index 0 (data1) and set 3, index 0 (data2)
-        config = (0 << `CONFIG_OFFSET) | // is_read = 0 (Write)
-                 (1 << (`CONFIG_OFFSET + 1)) | // addr_idx = 1
-                 (2 << (`CONFIG_OFFSET + 1 + `REG_SET_IDX_WIDTH)) | // data_idx1 = 2
-                 (3 << (`CONFIG_OFFSET + 1 + `REG_SET_IDX_WIDTH*2)); // data_idx2 = 3
+        configs = 16'b0000110100010000;
 
         // Set addresses in regfile set 1, index 0
         // addr1 = 0x1000, addr2 = 0x1004
@@ -357,10 +350,7 @@ module tb_main_mem_fu;
         // Configure for read: is_read=1, addr_idx=4, data_idx1=5, data_idx2=6
         // Addresses will be read from regfile set 4, index 0
         // Read data will be written to regfile set 5, index 0 (data1) and set 6, index 0 (data2)
-         config = (1 << `CONFIG_OFFSET) | // is_read = 1 (Read)
-                 (4 << (`CONFIG_OFFSET + 1)) | // addr_idx = 4
-                 (5 << (`CONFIG_OFFSET + 1 + `REG_SET_IDX_WIDTH)) | // data_idx1 = 5
-                 (6 << (`CONFIG_OFFSET + 1 + `REG_SET_IDX_WIDTH*2)); // data_idx2 = 6
+        configs = 16'b0001101011001000;
 
         // Set addresses in regfile set 4, index 0
         // addr1 = 0x2000, addr2 = 0x2008
