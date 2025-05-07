@@ -10,8 +10,8 @@ Inspired by Cheng Tan's [Vector CGRA](https://github.com/tancheng/VectorCGRA/tre
 
 **Example:**
 ```bash
-test/v_tile$ iverilog -g2012 -o out_sim v_tile_tb.sv ../../src/v_tile/v_tile.sv
-test/v_tile$ vvp out_sim
+iverilog -g2012 -o out_sim v_tile_tb.sv ../../src/v_tile/v_tile.sv
+vvp out_sim
 ```
 
 ### Design so far:  
