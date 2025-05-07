@@ -28,3 +28,4 @@ vvp out_sim
     - regfile.sv
  * Refactor all code to adhere to [BSG standards](https://docs.google.com/document/d/1xA5XUzBtz_D6aSyIBQUwFk_kSUdckrfxa2uzGjMgmCU/edit?tab=t.0#heading=h.mtsevafs4tag)
  * Make documentation super clean and helpful 
+ * Contribute to iVerilog to enable printing arrays to screen (%p) and to enable `b0 and 'b1 value assignments to multi wire variables
