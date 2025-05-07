@@ -13,6 +13,7 @@ Local regfile bits config_i will specify:
  - (4:6) addr1&2 location, regfile set (1-6?)
  - (7:12) data destination for reads or data origin for writes, which regfile sets (1-6?)
 
+(I know it's alot of ports, this is just a proof of concept for FPGAs, not tape-out):
 main mem port:
  - 2 x read from main mem addr ports
  - 2 x write to main mem addr ports
@@ -110,10 +111,10 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
     logic [reg_set_idx_width-1:0] data_idx2_comb;
 
     // Decode config input combinationally
-    assign is_read_comb = config_i[CONFIG_OFFSET];
-    assign addr_idx_comb = config_i[reg_set_idx_width+CONFIG_OFFSET : 4]; // Assumes bits [6:4] for 3-bit index
-    assign data_idx1_comb = config_i[reg_set_idx_width+CONFIG_OFFSET : 7]; // Assumes bits [9:7] for 3-bit index
-    assign data_idx2_comb = config_i[reg_set_idx_width+CONFIG_OFFSET+CONFIG_OFFSET : 10]; // Assumes bits [12:10] for 3-bit index
+    assign is_read_comb = config_i[`CONFIG_OFFSET];
+    assign addr_idx_comb = config_i[reg_set_idx_width+`CONFIG_OFFSET : 4]; // Assumes bits [6:4] for 3-bit index
+    assign data_idx1_comb = config_i[reg_set_idx_width+`CONFIG_OFFSET+`CONFIG_OFFSET : 7]; // Assumes bits [9:7] for 3-bit index
+    assign data_idx2_comb = config_i[reg_set_idx_width+`CONFIG_OFFSET+`CONFIG_OFFSET+`CONFIG_OFFSET : 10]; // Assumes bits [12:10] for 3-bit index
 
     // State Register Logic (Sequential)
     always_ff @(posedge clk_i) begin
@@ -135,7 +136,7 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
             // Latch registers based on FSM state transitions (in combinational block)
             if (next_state == REQ_ADDR) begin // Latch config when starting
                 is_read_reg       <= is_read_comb;
-                addr_reg_idx <= addr_idx_comb;
+                addr_reg_set <= addr_idx_comb;
                 data_reg_idx1 <= data_idx1_comb;
                 data_reg_idx2 <= data_idx2_comb;
             end
@@ -201,16 +202,19 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
             REQ_ADDR: begin
                 // Request addresses from regfile using latched base index
                 reg_read1_o = 1'b1; // Assert regfile read request
-                reg_set1_idx_o = addr_reg_idx;     // Index for addr1
+                reg_read2_o = 1'b1; // Assert regfile read request
+                reg_set1_idx_o = addr_reg_set;     // Index for addr1
                 next_state = WAIT_ADDR;
             end
 
             WAIT_ADDR: begin
-                reg_read_o = 1'b1; // Keep request high until ack
-                reg_set1_idx_o = addr_reg_idx;     // Keep asserted
+                reg_read1_o = 1'b1; // Keep request high until ack
+                reg_read2_o = 1'b1; // Keep request high until ack
+                reg_set1_idx_o = addr_reg_set;     // Keep asserted
                 if (reg_ack1_i) begin
                     // Addresses latched in sequential block
-                    reg_read_o = 1'b0; // Deassert request
+                    reg_read1_o = 1'b0; // Deassert request
+                    reg_read2_o = 1'b0; // Deassert request
                     if (is_read_reg) begin // Check latched read/write flag
                         next_state = EXEC_READ; // Go to main memory read
                     end else begin
@@ -223,7 +227,8 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
 
             // --- States for Main Memory Write Operation ---
             REQ_WDATA: begin
-                reg_read_o = 1'b1; // Request read from regfile
+                reg_read1_o = 1'b1; // Request read from regfile
+                reg_read2_o = 1'b1; // Request read from regfile
                 // Use latched base index for data source
                 reg_set1_idx_o = data_reg_idx1;      // Index for w_data1
                 reg_set2_idx_o = data_reg_idx2;  // Index for w_data2
@@ -240,9 +245,9 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
                     reg_read1_o = 1'b0; // Deassert request
                     reg_read2_o = 1'b0; // Deassert request
                     next_state = EXEC_WRITE;
-                end else {
+                end else begin
                     next_state = WAIT_WDATA;
-                }
+                end
             end
 
             EXEC_WRITE: begin
@@ -304,9 +309,9 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
                 reg_write2_o = 1'b1; // Assert regfile write request
                 // Write lower and upper 16 bits of r_data1_reg
                 reg_set1_idx_o = data_reg_idx1;    
-                reg_set2_idx_o = data_reg_idx2 
-                reg_data1_o = r_data1_reg
-                reg_data2_o = r_data2_reg
+                reg_set2_idx_o = data_reg_idx2 ;
+                reg_data1_o = r_data1_reg;
+                reg_data2_o = r_data2_reg;
                 next_state = WAIT_WACK_RDATA;
             end
 
@@ -315,8 +320,8 @@ module main_mem_fu #(parameter data_width = 32, parameter addr_size = 16, num_re
                 reg_write2_o = 1'b1; // Keep write request high
                 reg_set1_idx_o = data_reg_idx1;     // Keep indices asserted
                 reg_set2_idx_o = data_reg_idx2;
-                reg_data1_o = r_data1_reg
-                reg_data2_o = r_data2_reg
+                reg_data1_o = r_data1_reg;
+                reg_data2_o = r_data2_reg;
                 if (reg_ack_i) begin
                     reg_write1_o = 1'b0; // Deassert write request
                     reg_write2_o = 1'b0; // Deassert write request
