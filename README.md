@@ -26,5 +26,5 @@ test/v_tile$ vvp out_sim
     - s_tile.sv
     - mem.sv
     - regfile.sv
- * Refactor all code to adhere to [BSG standards(https://docs.google.com/document/d/1xA5XUzBtz_D6aSyIBQUwFk_kSUdckrfxa2uzGjMgmCU/edit?tab=t.0#heading=h.mtsevafs4tag)
+ * Refactor all code to adhere to [BSG standards](https://docs.google.com/document/d/1xA5XUzBtz_D6aSyIBQUwFk_kSUdckrfxa2uzGjMgmCU/edit?tab=t.0#heading=h.mtsevafs4tag)
  * Make documentation super clean and helpful 
