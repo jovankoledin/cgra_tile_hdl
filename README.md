@@ -16,3 +16,15 @@ test/v_tile$ vvp out_sim
 
 ### Design so far:  
 ![alt text](/draw/arch_20250406.png)
+
+### TODO:
+ * Finish and test Scalar tile modules:
+  ** main_mem_fu.sv
+  ** branch_fu.sv
+  ** comparator_fu.sv
+  ** phi_fu.sv
+  ** s_tile.sv
+  ** mem.sv
+  ** regfile.sv
+ * Refactor all code to adhere to [BSG standards(https://docs.google.com/document/d/1xA5XUzBtz_D6aSyIBQUwFk_kSUdckrfxa2uzGjMgmCU/edit?tab=t.0#heading=h.mtsevafs4tag)
+ * Make documentation super clean and helpful 
