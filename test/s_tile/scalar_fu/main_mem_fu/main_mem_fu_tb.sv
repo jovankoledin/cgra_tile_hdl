@@ -7,11 +7,12 @@
 `define NUM_REG_SETS 6
 `define REG_SET_IDX_WIDTH 3
 `define CONFIG_OFFSET 3
+`define REG_FILE_SETS 6
+
 
 // Define memory and register file sizes for the models
 `define MAIN_MEM_SIZE 2**`ADDR_SIZE // 65536 locations
-`define REG_FILE_SIZE 16 // 16 entries per set (assuming 16x16 bits, but DUT uses 32-bit words)
-`define REG_FILE_SETS `NUM_REG_SETS // Number of register sets
+`define REG_FILE_SIZE 16 // 16 entries (assuming 16x16 bits, but DUT uses 32-bit words)
 
 // Define configuration bit masks (based on DUT decoding)
 // config_i:
@@ -67,13 +68,13 @@ module tb_main_mem_fu;
     logic reg_ack2;
 
     // Internal signals for models
-    logic [`DATA_WIDTH-1:0] main_memory [`MAIN_MEM_SIZE-1];
+    logic [`DATA_WIDTH-1:0] main_memory [`MAIN_MEM_SIZE-1:0];
     // Register file model: reg_file[set][index]
     // Assuming each regfile entry is 16 bits, but DUT reads/writes 32-bit words.
     // The DUT requests addr1/addr2 from one regfile entry (32 bits total).
     // The DUT requests/writes w_data1/w_data2 from/to two separate regfile entries (32 bits each).
     // Let's model the regfile as 32-bit entries to match the DUT's data ports.
-    logic [`DATA_WIDTH-1:0] register_file [`REG_FILE_SETS-1][`REG_FILE_SIZE-1];
+    logic [`DATA_WIDTH-1:0] register_file [`REG_FILE_SETS-1:0];
 
     // Clock generation
     initial begin
@@ -138,11 +139,11 @@ module tb_main_mem_fu;
     end
 
     // Main Memory Read Logic
-    always_ff @(posedge clk) begin
+    always@(posedge clk) begin
         if (read_en1) begin
             // Simulate read access delay
             #MEM_ACCESS_DELAY;
-            if (addr1 < MAIN_MEM_SIZE) begin
+            if (addr1 < `MAIN_MEM_SIZE) begin
                 r_data1 <= main_memory[addr1];
             end else begin
                 $display("Main Memory Read Error: Address 0x%h out of bounds at time %0t", addr1, $time);
@@ -156,7 +157,7 @@ module tb_main_mem_fu;
         if (read_en2) begin
              // Simulate read access delay
             #MEM_ACCESS_DELAY;
-            if (addr2 < MAIN_MEM_SIZE) begin
+            if (addr2 < `MAIN_MEM_SIZE) begin
                 r_data2 <= main_memory[addr2];
             end else begin
                 $display("Main Memory Read Error: Address 0x%h out of bounds at time %0t", addr2, $time);
@@ -169,11 +170,11 @@ module tb_main_mem_fu;
     end
 
     // Main Memory Write Logic
-    always_ff @(posedge clk) begin
+    always@(posedge clk) begin
         if (write_en1) begin
             // Simulate write access delay
             #MEM_ACCESS_DELAY;
-            if (addr1 < MAIN_MEM_SIZE) begin
+            if (addr1 < `MAIN_MEM_SIZE) begin
                 main_memory[addr1] <= w_data1;
                 $display("Main Memory Write: Addr 0x%h <= Data 0x%h at time %0t", addr1, w_data1, $time);
             end else begin
@@ -187,7 +188,7 @@ module tb_main_mem_fu;
          if (write_en2) begin
             // Simulate write access delay
             #MEM_ACCESS_DELAY;
-            if (addr2 < MAIN_MEM_SIZE) begin
+            if (addr2 < `MAIN_MEM_SIZE) begin
                 main_memory[addr2] <= w_data2;
                 $display("Main Memory Write: Addr 0x%h <= Data 0x%h at time %0t", addr2, w_data2, $time);
             end else begin
@@ -217,13 +218,13 @@ module tb_main_mem_fu;
 
     // Register File Read Logic
     // Handles requests for addresses and write data
-    always_ff @(posedge clk) begin
+    always@(posedge clk) begin
         if (reg_read1) begin
             #REG_ACCESS_DELAY;
-            if (reg_set1_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for addresses
+            if (reg_set1_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for addresses
                 // DUT expects 32 bits for addresses, packed as {addr2, addr1}
-                reg_data1_out <= register_file[reg_set1_idx][0]; // Assuming index 0 holds the packed addresses
-                $display("RegFile Read 1: Set %0d, Index 0 -> Data 0x%h at time %0t", reg_set1_idx, register_file[reg_set1_idx][0], $time);
+                reg_data1_out <= register_file[reg_set1_idx]; // Assuming index 0 holds the packed addresses
+                $display("RegFile Read 1: Set %0d, Index 0 -> Data 0x%h at time %0t", reg_set1_idx, register_file[reg_set1_idx], $time);
             end else begin
                  $display("RegFile Read 1 Error: Set %0d or Index 0 out of bounds at time %0t", reg_set1_idx, $time);
                  reg_data1_out <= {`DATA_WIDTH{1'bX}};
@@ -235,10 +236,10 @@ module tb_main_mem_fu;
 
          if (reg_read2) begin
             #REG_ACCESS_DELAY;
-            if (reg_set2_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for data
+            if (reg_set2_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for data
                 // DUT expects 32 bits for data2
-                reg_data2_out <= register_file[reg_set2_idx][0]; // Assuming index 0 holds data
-                 $display("RegFile Read 2: Set %0d, Index 0 -> Data 0x%h at time %0t", reg_set2_idx, register_file[reg_set2_idx][0], $time);
+                reg_data2_out <= register_file[reg_set2_idx]; // Assuming index 0 holds data
+                 $display("RegFile Read 2: Set %0d, Index 0 -> Data 0x%h at time %0t", reg_set2_idx, register_file[reg_set2_idx], $time);
             end else begin
                  $display("RegFile Read 2 Error: Set %0d or Index 0 out of bounds at time %0t", reg_set2_idx, $time);
                  reg_data2_out <= {`DATA_WIDTH{1'bX}};
@@ -251,11 +252,11 @@ module tb_main_mem_fu;
 
     // Register File Write Logic
     // Handles writes of read data back from main memory
-    always_ff @(posedge clk) begin
+    always@(posedge clk) begin
         if (reg_write1) begin
             #REG_ACCESS_DELAY;
-             if (reg_set1_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for data
-                register_file[reg_set1_idx][0] <= reg_data1_in;
+             if (reg_set1_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for data
+                register_file[reg_set1_idx] <= reg_data1_in;
                 $display("RegFile Write 1: Set %0d, Index 0 <= Data 0x%h at time %0t", reg_set1_idx, reg_data1_in, $time);
             end else begin
                 $display("RegFile Write 1 Error: Set %0d or Index 0 out of bounds at time %0t", reg_set1_idx, $time);
@@ -267,8 +268,8 @@ module tb_main_mem_fu;
 
          if (reg_write2) begin
             #REG_ACCESS_DELAY;
-             if (reg_set2_idx < REG_FILE_SETS && 0 < REG_FILE_SIZE) begin // Assuming index 0 for data
-                register_file[reg_set2_idx][0] <= reg_data2_in;
+             if (reg_set2_idx < `REG_FILE_SETS && 0 < `REG_FILE_SIZE) begin // Assuming index 0 for data
+                register_file[reg_set2_idx] <= reg_data2_in;
                 $display("RegFile Write 2: Set %0d, Index 0 <= Data 0x%h at time %0t", reg_set2_idx, reg_data2_in, $time);
             end else begin
                 $display("RegFile Write 2 Error: Set %0d or Index 0 out of bounds at time %0t", reg_set2_idx, $time);
@@ -288,13 +289,11 @@ module tb_main_mem_fu;
         configs = {`ADDR_SIZE{1'b0}};
 
         // Initialize memory and register file
-        for (int i = 0; i < MAIN_MEM_SIZE; i++) begin
+        for (int i = 0; i < `MAIN_MEM_SIZE; i++) begin
             main_memory[i] = i; // Initialize with some pattern
         end
-        for (int i = 0; i < REG_FILE_SETS; i++) begin
-            for (int j = 0; j < REG_FILE_SIZE; j++) begin
-                register_file[i][j] = {`DATA_WIDTH{1'b0}};
-            end
+        for (int i = 0; i < `REG_FILE_SETS; i++) begin
+            register_file[i] = {`DATA_WIDTH{1'b0}};
         end
 
         // Apply reset
@@ -312,15 +311,15 @@ module tb_main_mem_fu;
 
         // Set addresses in regfile set 1, index 0
         // addr1 = 0x1000, addr2 = 0x1004
-        register_file[1][0] = {16'h1004, 16'h1000};
-        $display("Set RegFile[1][0] to 0x%h (Addresses 0x1000, 0x1004) at time %0t", register_file[1][0], $time);
+        register_file[0] = {16'h1004, 16'h1000};
+        $display("Set RegFile[1] to 0x%h (Addresses 0x1000, 0x1004) at time %0t", register_file[0], $time);
 
         // Set write data in regfile set 2, index 0 and set 3, index 0
         // w_data1 = 0xAABBCCDD, w_data2 = 0xEEFF1122
-        register_file[2][0] = 32'hAABBCCDD;
-        register_file[3][0] = 32'hEEFF1122;
-        $display("Set RegFile[2][0] to 0x%h (w_data1) at time %0t", register_file[2][0], $time);
-        $display("Set RegFile[3][0] to 0x%h (w_data2) at time %0t", register_file[3][0], $time);
+        register_file[1] = 32'hAABBCCDD;
+        register_file[2] = 32'hEEFF1122;
+        $display("Set RegFile[1] to 0x%h (w_data1) at time %0t", register_file[1], $time);
+        $display("Set RegFile[2] to 0x%h (w_data2) at time %0t", register_file[2], $time);
 
         // Start the operation
         on_off = 1;
@@ -354,13 +353,14 @@ module tb_main_mem_fu;
 
         // Set addresses in regfile set 4, index 0
         // addr1 = 0x2000, addr2 = 0x2008
-        register_file[4][0] = {16'h2008, 16'h2000};
-         $display("Set RegFile[4][0] to 0x%h (Addresses 0x2000, 0x2008) at time %0t", register_file[4][0], $time);
+        register_file[3] = {16'h2008, 16'h2000};
+         $display("Set RegFile[3] to 0x%h (Addresses 0x2000, 0x2008) at time %0t", register_file[3], $time);
 
         // Clear destination regfile locations
-        register_file[5][0] = {`DATA_WIDTH{1'b0}};
-        register_file[6][0] = {`DATA_WIDTH{1'b0}};
-        $display("Cleared RegFile[5][0] and RegFile[6][0] for read destination");
+        register_file[4] = {`DATA_WIDTH{1'b0}};
+        register_file[5] = {`DATA_WIDTH{1'b0}};
+
+        $display("Cleared RegFile[4&5] for read destination");
 
         // Start the operation
         on_off = 1;
@@ -373,10 +373,10 @@ module tb_main_mem_fu;
 
         // Check if data was read correctly into the register file
         #10; // Wait a bit for regfile model to finish
-        if (register_file[5][0] == 32'h11223344 && register_file[6][0] == 32'h55667788) begin
-             $display("Read Test Case Passed: RegFile[5][0] is 0x%h, RegFile[6][0] is 0x%h", register_file[5][0], register_file[6][0]);
+        if (register_file[4] == 32'h11223344 && register_file[5] == 32'h55667788) begin
+             $display("Read Test Case Passed: RegFile[4] is 0x%h, RegFile[5] is 0x%h", register_file[4], register_file[5]);
         end else begin
-             $display("Read Test Case Failed: RegFile[5][0] is 0x%h (Expected 0x11223344), RegFile[6][0] is 0x%h (Expected 0x55667788)", register_file[5][0], register_file[6][0]);
+             $display("Read Test Case Failed: RegFile[4] is 0x%h (Expected 0x11223344), RegFile[5] is 0x%h (Expected 0x55667788)", register_file[4], register_file[5]);
         end
 
 
